@@ -271,8 +271,8 @@ Instead of hand-crafted rules, the model learns optimal criteria from thousands 
 ### Software Dependencies
 
 The versioned installer script automatically handles all dependencies. You don't need to manually install anything - the installer will set up either:
-- **Conda environment** (recommended, used with `--use-conda` flag)
-- **Docker or Singularity** (alternative option)
+- **Conda environment** (recommended, used with `--use-conda` flag) - lighter weight, ~3GB less storage than Docker
+- **Docker or Singularity** (alternative option) - requires ~3GB of Docker images
 
 Simply run the installer script from the Versions directory with your preferred option and it will handle all dependencies including Python, TensorFlow, SAMtools, and Pysam.
 
