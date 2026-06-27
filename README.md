@@ -16,14 +16,13 @@ ls Versions/
 
 ### 1. Installation (Required)
 
-**Prerequisites:**
-- For conda installation: conda must be installed on your system
-- For Docker installation: Docker must be installed on your system
+**Prerequisite:**
+- Conda must be installed on your system (Miniconda or Anaconda)
 
 **You must specify an installation directory.** The installation script requires explicit parameters to ensure proper setup.
 
 ```bash
-# Install with conda (recommended)
+# Install with conda
 ./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /path/to/installation
 
 # Example:
@@ -31,17 +30,16 @@ ls Versions/
 ```
 
 **What the installer does:**
-- **Conda mode**: Clones the DeNovoCNN repository from GitHub and creates a conda environment using the environment.yml file
-- **Docker mode**: Pulls the DeNovoCNN Docker image (gelana/denovocnn:1.0)
+- Clones the DeNovoCNN repository from GitHub to your specified installation directory
+- Creates a conda environment using the environment.yml file with all required dependencies (Python, TensorFlow, SAMtools, Pysam)
 
 **Required Parameters:**
 - `--install-dir PATH`: Where to install DeNovoCNN (must be specified)
 
 **Optional Parameters:**
-- `--use-conda`: Use conda instead of Docker (recommended, default: true)
+- `--use-conda`: Use conda environment (default: true)
 - `--conda-prefix PATH`: Exact conda environment location (default: install_dir/env)
 - `--conda-env NAME`: Conda environment name (only if conda-prefix not set)
-- `--docker-image IMAGE`: Docker image name (for Docker installation)
 
 **If you run without --install-dir, you will see:**
 ```
@@ -268,11 +266,10 @@ Instead of hand-crafted rules, the model learns optimal criteria from thousands 
 
 ### Software Dependencies
 
-**Prerequisites (you must have one of these installed):**
-- **Conda** (recommended) - Must be installed on your system before running the installer. The installer will then create a conda environment with all required packages (Python, TensorFlow, SAMtools, Pysam) from the environment.yml file
-- **Docker** (alternative) - Must be installed on your system before running the installer. The installer will pull the DeNovoCNN Docker image (~3GB)
+**Prerequisite:**
+- **Conda** (Miniconda or Anaconda) - Must be installed on your system before running the installer
 
-The installer does not install conda or Docker itself - you need to have them installed first.
+The installer will create a conda environment with all required packages (Python, TensorFlow, SAMtools, Pysam) from the environment.yml file. You do not need to install these packages manually.
 
 ## Limitations
 
