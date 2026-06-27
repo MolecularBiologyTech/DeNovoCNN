@@ -11,10 +11,11 @@ DeNovoCNN uses a versioned installation system. The latest installer script is a
 ls Versions/
 
 # Use the latest version installer
-./Versions/v.1.0.1/DeNovoCNN_Installer_v.1.0.1.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.0.2/DeNovoCNN_Installer_v.1.0.2.sh --use-conda --install-dir /path/to/installation
 ```
 
 **Version History:**
+- v.1.0.2: Included run_denovocnn_pipeline.sh script in installer (copied to installation directory after setup)
 - v.1.0.1: Added Ubuntu Linux support (OS detection, Ubuntu-specific paths, OS-specific conda installation instructions)
 - v.1.0.0: Initial version
 
@@ -60,7 +61,7 @@ Example:
 
 ### 2. After Installation
 
-After installation completes, the DeNovoCNN repository will be cloned to your specified installation directory with all necessary dependencies set up in the conda environment or Docker image.
+After installation completes, the DeNovoCNN repository will be cloned to your specified installation directory with all necessary dependencies set up in the conda environment. The installer also copies the `run_denovocnn_pipeline.sh` script to your installation directory for running analysis.
 
 The installer saves your configuration to `install_config.sh` in the installation directory for reference.
 
