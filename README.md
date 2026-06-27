@@ -2,6 +2,18 @@
 
 ## Quick Start
 
+### Version Management
+
+DeNovoCNN uses a versioned installation system. The latest installer script is always available in the `Versions/` directory.
+
+```bash
+# List available versions
+ls Versions/
+
+# Use the latest version installer
+./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /path/to/installation
+```
+
 ### 1. Installation (Required)
 
 **You must specify an installation directory.** The installation script requires explicit parameters to ensure proper setup.
@@ -286,3 +298,43 @@ DeNovoCNN is released under MIT License. See LICENSE file for details.
 ## Contact
 
 For questions or issues, please visit: https://github.com/Genome-Bioinformatics-RadboudUMC/DeNovoCNN
+
+## For Developers
+
+### Creating New Versions
+
+To release a new version of DeNovoCNN:
+
+1. **Modify the installer** in the current version directory:
+   ```bash
+   # Edit the latest version installer
+   nano Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh
+   ```
+
+2. **Run the update script** to create a new version:
+   ```bash
+   ./update_version.sh
+   ```
+
+The script will:
+- Automatically increment the patch version (e.g., v.1.0.0 → v.1.0.1)
+- Copy the modified installer to the new version directory
+- Create a git commit with version changes
+- Create and push a git tag
+- Restore the original version to its unmodified state
+- Push changes to GitHub
+
+**Version directory structure:**
+```
+DeNovoCNN/
+├── Versions/
+│   ├── v.1.0.0/
+│   │   └── DeNovoCNN_Installer_v.1.0.0.sh
+│   ├── v.1.0.1/
+│   │   └── DeNovoCNN_Installer_v.1.0.1.sh
+│   └── ...
+├── update_version.sh
+└── ...
+```
+
+**Important:** Always modify the installer in the current version directory before running `update_version.sh`. The script expects the source file to be modified and will preserve those changes in the new version while restoring the original to its clean state.
