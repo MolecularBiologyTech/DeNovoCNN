@@ -270,13 +270,11 @@ Instead of hand-crafted rules, the model learns optimal criteria from thousands 
 
 ### Software Dependencies
 
-The versioned installer script automatically handles all dependencies. You don't need to manually install:
-- Docker or Singularity
-- Python 3.7+ with TensorFlow
-- SAMtools
-- Pysam
+The versioned installer script automatically handles all dependencies. You don't need to manually install anything - the installer will set up either:
+- **Conda environment** (recommended, used with `--use-conda` flag)
+- **Docker or Singularity** (alternative option)
 
-Simply run the installer script from the Versions directory and it will set up everything for you.
+Simply run the installer script from the Versions directory with your preferred option and it will handle all dependencies including Python, TensorFlow, SAMtools, and Pysam.
 
 ## Limitations
 
