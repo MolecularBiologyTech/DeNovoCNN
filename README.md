@@ -11,8 +11,12 @@ DeNovoCNN uses a versioned installation system. The latest installer script is a
 ls Versions/
 
 # Use the latest version installer
-./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.0.1/DeNovoCNN_Installer_v.1.0.1.sh --use-conda --install-dir /path/to/installation
 ```
+
+**Version History:**
+- v.1.0.1: Added Ubuntu Linux support (OS detection, Ubuntu-specific paths, OS-specific conda installation instructions)
+- v.1.0.0: Initial version
 
 ### 1. Installation (Required)
 
