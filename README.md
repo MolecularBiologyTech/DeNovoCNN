@@ -269,10 +269,14 @@ Instead of hand-crafted rules, the model learns optimal criteria from thousands 
 - **Optional**: GPU for faster inference (not required)
 
 ### Software Dependencies
-- Docker or Singularity (recommended)
-- Python 3.7+ with TensorFlow (for manual installation)
-- SAMtools for BAM processing
-- Pysam for BAM file handling
+
+The versioned installer script automatically handles all dependencies. You don't need to manually install:
+- Docker or Singularity
+- Python 3.7+ with TensorFlow
+- SAMtools
+- Pysam
+
+Simply run the installer script from the Versions directory and it will set up everything for you.
 
 ## Limitations
 
