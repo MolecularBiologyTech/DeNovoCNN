@@ -16,15 +16,23 @@ ls Versions/
 
 ### 1. Installation (Required)
 
+**Prerequisites:**
+- For conda installation: conda must be installed on your system
+- For Docker installation: Docker must be installed on your system
+
 **You must specify an installation directory.** The installation script requires explicit parameters to ensure proper setup.
 
 ```bash
 # Install with conda (recommended)
-./install_denovocnn.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /path/to/installation
 
 # Example:
-./install_denovocnn.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
+./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
 ```
+
+**What the installer does:**
+- **Conda mode**: Clones the DeNovoCNN repository from GitHub and creates a conda environment using the environment.yml file
+- **Docker mode**: Pulls the DeNovoCNN Docker image (gelana/denovocnn:1.0)
 
 **Required Parameters:**
 - `--install-dir PATH`: Where to install DeNovoCNN (must be specified)
@@ -42,27 +50,17 @@ ERROR: Installation directory not specified
 You must specify an installation directory using --install-dir
 
 Required usage:
-  ./install_denovocnn.sh --install-dir /path/to/installation
+  ./DeNovoCNN_Installer_v.1.0.0.sh --install-dir /path/to/installation
 
 Example:
-  ./install_denovocnn.sh --install-dir /Users/matteozoia/tools/DeNovoCNN
+  ./DeNovoCNN_Installer_v.1.0.0.sh --install-dir /Users/matteozoia/tools/DeNovoCNN
 ```
 
-### 2. Run Analysis Pipeline
+### 2. After Installation
 
-After installation, use the pipeline script to analyze your trio data:
+After installation completes, the DeNovoCNN repository will be cloned to your specified installation directory with all necessary dependencies set up in the conda environment or Docker image.
 
-```bash
-./run_denovocnn_pipeline.sh \
-  --child-bam /path/to/child.bam \
-  --father-bam /path/to/father.bam \
-  --mother-bam /path/to/mother.bam \
-  --child-vcf /path/to/child.vcf \
-  --father-vcf /path/to/father.vcf \
-  --mother-vcf /path/to/mother.vcf \
-  --reference /path/to/GRCh38.fa \
-  --phenotype-file /path/to/phenotypes.txt
-```
+The installer saves your configuration to `install_config.sh` in the installation directory for reference.
 
 ## Overview
 
@@ -270,11 +268,11 @@ Instead of hand-crafted rules, the model learns optimal criteria from thousands 
 
 ### Software Dependencies
 
-The versioned installer script automatically handles all dependencies. You don't need to manually install anything - the installer will set up either:
-- **Conda environment** (recommended, used with `--use-conda` flag) - lighter weight, ~3GB less storage than Docker
-- **Docker or Singularity** (alternative option) - requires ~3GB of Docker images
+**Prerequisites (you must have one of these installed):**
+- **Conda** (recommended) - Must be installed on your system before running the installer. The installer will then create a conda environment with all required packages (Python, TensorFlow, SAMtools, Pysam) from the environment.yml file
+- **Docker** (alternative) - Must be installed on your system before running the installer. The installer will pull the DeNovoCNN Docker image (~3GB)
 
-Simply run the installer script from the Versions directory with your preferred option and it will handle all dependencies including Python, TensorFlow, SAMtools, and Pysam.
+The installer does not install conda or Docker itself - you need to have them installed first.
 
 ## Limitations
 
