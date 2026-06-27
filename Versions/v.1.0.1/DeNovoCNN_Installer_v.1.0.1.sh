@@ -2,8 +2,8 @@
 
 ###############################################################################
 # DeNovoCNN Installation Script
-#
-# This script installs DeNovoCNN using conda on macOS or Ubuntu Linux
+# 
+# This script installs DeNovoCNN using either Docker or conda
 # After installation, use run_denovocnn_pipeline.sh for analysis
 #
 # Usage: ./install_denovocnn.sh [options]
@@ -18,21 +18,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Detect OS
-OS_TYPE="$(uname -s)"
-case "${OS_TYPE}" in
-    Linux*)     OS="Linux";;
-    Darwin*)    OS="macOS";;
-    *)          OS="UNKNOWN"
-esac
-
-echo -e "${BLUE}Detected OS: $OS${NC}"
-
 # Default parameters
 INSTALL_DIR=""
-USE_CONDA=true  # Default to conda
+USE_CONDA=true  # Default to conda (recommended)
 CONDA_PREFIX=""
 CONDA_ENV_NAME="denovocnn_env"
+DOCKER_IMAGE="gelana/denovocnn:1.0"
 
 ###############################################################################
 # Help Function
@@ -41,15 +32,18 @@ print_help() {
     echo "Usage: $0 [options]"
     echo ""
     echo "Installation Options:"
-    echo "  --use-conda             Use conda environment (recommended)"
-    echo "  --install-dir PATH      Directory for DeNovoCNN installation (required)"
+    echo "  --use-conda             Use conda instead of Docker (recommended)"
+    echo "  --install-dir PATH      Directory for DeNovoCNN installation (default: ./DeNovoCNN)"
     echo "  --conda-prefix PATH     Exact conda environment location (default: install_dir/env)"
     echo "  --conda-env NAME        Conda environment name (only if conda-prefix not set)"
+    echo "  --docker-image IMAGE    Docker image name (default: gelana/denovocnn:1.0)"
     echo "  --help                  Show this help message"
     echo ""
-    echo "Examples:"
-    echo "  macOS:   $0 --use-conda --install-dir /Users/username/tools/DeNovoCNN"
-    echo "  Ubuntu:  $0 --use-conda --install-dir /home/username/tools/DeNovoCNN"
+    echo "Example (Conda - Recommended):"
+    echo "  $0 --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN"
+    echo ""
+    echo "Example (Docker):"
+    echo "  $0"
     echo ""
     echo "After installation, use: ./run_denovocnn_pipeline.sh [options]"
 }
@@ -105,22 +99,10 @@ if [[ -z "$INSTALL_DIR" ]]; then
     echo "  $0 --install-dir /path/to/installation"
     echo ""
     echo -e "${BLUE}Example:${NC}"
-    if [[ "$OS" == "macOS" ]]; then
-        echo "  $0 --install-dir /Users/username/tools/DeNovoCNN"
-    elif [[ "$OS" == "Linux" ]]; then
-        echo "  $0 --install-dir /home/username/tools/DeNovoCNN"
-    else
-        echo "  $0 --install-dir /path/to/installation"
-    fi
+    echo "  $0 --install-dir /Users/matteozoia/tools/DeNovoCNN"
     echo ""
     echo -e "${BLUE}Full example with conda:${NC}"
-    if [[ "$OS" == "macOS" ]]; then
-        echo "  $0 --use-conda --install-dir /Users/username/tools/DeNovoCNN"
-    elif [[ "$OS" == "Linux" ]]; then
-        echo "  $0 --use-conda --install-dir /home/username/tools/DeNovoCNN"
-    else
-        echo "  $0 --use-conda --install-dir /path/to/installation"
-    fi
+    echo "  $0 --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN"
     echo ""
     echo -e "${YELLOW}For more options, run: $0 --help${NC}"
     exit 1
@@ -142,18 +124,12 @@ echo -e "${BLUE}DeNovoCNN Installation${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 if [[ "$USE_CONDA" = true ]]; then
-    echo -e "${BLUE}Setting up conda installation on $OS...${NC}"
+    echo -e "${BLUE}Setting up conda installation...${NC}"
     
     # Check conda installation
     if ! command -v conda &> /dev/null; then
         echo -e "${RED}Error: Conda is not installed. Please install conda first.${NC}"
-        if [[ "$OS" == "Linux" ]]; then
-            echo "Ubuntu Linux: wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-            echo "              bash Miniconda3-latest-Linux-x86_64.sh"
-        else
-            echo "macOS: brew install --cask miniconda"
-        fi
-        echo "Or visit: https://docs.conda.io/en/latest/miniconda.html"
+        echo "Visit: https://docs.conda.io/en/latest/miniconda.html"
         exit 1
     fi
     
@@ -197,19 +173,45 @@ export INSTALL_DIR="$INSTALL_DIR"
 export USE_CONDA=true
 export CONDA_PREFIX="$CONDA_PREFIX"
 export CONDA_ENV_NAME="$CONDA_ENV_NAME"
-export OS="$OS"
 EOF
+    
+else
+    echo -e "${BLUE}Setting up Docker installation...${NC}"
+    
+    # Check Docker installation
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}Error: Docker is not installed. Please install Docker first.${NC}"
+        echo "Visit: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+    
+    # Pull Docker Image
+    echo -e "${BLUE}Pulling DeNovoCNN Docker image: $DOCKER_IMAGE...${NC}"
+    docker pull "$DOCKER_IMAGE"
+    echo -e "${GREEN}Docker image pulled successfully${NC}"
+    
+    # Save installation configuration
+    cat > "$INSTALL_DIR/install_config.sh" << EOF
+#!/bin/bash
+export INSTALL_DIR="$INSTALL_DIR"
+export USE_CONDA=false
+export DOCKER_IMAGE="$DOCKER_IMAGE"
+EOF
+fi
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Installation Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Installation directory: $INSTALL_DIR${NC}"
-echo -e "${BLUE}Operating System: $OS${NC}"
-if [[ -n "$CONDA_PREFIX" ]]; then
-    echo -e "${BLUE}Conda environment: $CONDA_PREFIX${NC}"
+if [[ "$USE_CONDA" = true ]]; then
+    if [[ -n "$CONDA_PREFIX" ]]; then
+        echo -e "${BLUE}Conda environment: $CONDA_PREFIX${NC}"
+    else
+        echo -e "${BLUE}Conda environment: $CONDA_ENV_NAME${NC}"
+    fi
 else
-    echo -e "${BLUE}Conda environment: $CONDA_ENV_NAME${NC}"
+    echo -e "${BLUE}Docker image: $DOCKER_IMAGE${NC}"
 fi
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
