@@ -11,10 +11,12 @@ DeNovoCNN uses a versioned installation system. The latest installer script is a
 ls Versions/
 
 # Use the latest version installer
-./Versions/v.1.0.2/DeNovoCNN_Installer_v.1.0.2.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /path/to/installation
 ```
 
 **Version History:**
+- v.1.0.4: Restructured to follow 0.Workflow/1.Definespcs/2.Run pattern (0_README, 1_Define_data_specs.txt, 2_Run_analysis.sh)
+- v.1.0.3: Updated installer with improved workflow structure
 - v.1.0.2: Included run_denovocnn_pipeline.sh script in installer (copied to installation directory after setup)
 - v.1.0.1: Added Ubuntu Linux support (OS detection, Ubuntu-specific paths, OS-specific conda installation instructions)
 - v.1.0.0: Initial version
@@ -28,10 +30,10 @@ ls Versions/
 
 ```bash
 # Install with conda
-./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /path/to/installation
 
 # Example:
-./Versions/v.1.0.0/DeNovoCNN_Installer_v.1.0.0.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
+./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
 ```
 
 **What the installer does:**
@@ -53,17 +55,24 @@ ERROR: Installation directory not specified
 You must specify an installation directory using --install-dir
 
 Required usage:
-  ./DeNovoCNN_Installer_v.1.0.0.sh --install-dir /path/to/installation
+  ./DeNovoCNN_Installer_v.1.0.4.sh --install-dir /path/to/installation
 
 Example:
-  ./DeNovoCNN_Installer_v.1.0.0.sh --install-dir /Users/matteozoia/tools/DeNovoCNN
+  ./DeNovoCNN_Installer_v.1.0.4.sh --install-dir /Users/matteozoia/tools/DeNovoCNN
 ```
 
 ### 2. After Installation
 
-After installation completes, the DeNovoCNN repository will be cloned to your specified installation directory with all necessary dependencies set up in the conda environment. The installer also copies the `run_denovocnn_pipeline.sh` script to your installation directory for running analysis.
+After installation completes, the DeNovoCNN repository will be cloned to your specified installation directory with all necessary dependencies set up in the conda environment. The installer generates three files in the installation directory:
 
-The installer saves your configuration to `install_config.sh` in the installation directory for reference.
+- **0_README_DeNovoCNN_Workflow.md** - Complete workflow documentation
+- **1_Define_data_specs.txt** - Configuration file (edit this with your data paths and parameters)
+- **2_Run_analysis.sh** - Analysis pipeline script (execute this to run the analysis)
+
+**Usage:**
+1. Edit `1_Define_data_specs.txt` with your BAM/VCF file paths and analysis parameters
+2. Activate the conda environment
+3. Run `./2_Run_analysis.sh` to execute the analysis
 
 ## Overview
 
