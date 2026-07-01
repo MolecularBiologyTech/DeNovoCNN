@@ -351,6 +351,11 @@ MOTHER_VCF="/path/to/mother.vcf"
 # Reference genome (absolute path)
 REFERENCE="/path/to/reference.fa"
 
+# PED file (family structure and sample information) - Optional but recommended
+# Format: FamilyID SampleID FatherID MotherID Sex(1=male,2=female) Phenotype(1=unaffected,2=affected)
+# If provided, family structure and child's sex will be auto-detected
+PED_FILE="/path/to/family.ped"
+
 # ============================================================
 # 2. Optional parameters
 # ============================================================
@@ -450,6 +455,48 @@ if [[ -z "$REFERENCE" ]]; then
 fi
 
 ###############################################################################
+# Parse PED file if provided
+###############################################################################
+if [[ -n "$PED_FILE" && -f "$PED_FILE" ]]; then
+    echo -e "${BLUE}Parsing PED file...${NC}"
+    
+    # Parse PED file to extract family information
+    # PED format: FamilyID SampleID FatherID MotherID Sex(1=male,2=female) Phenotype(1=unaffected,2=affected)
+    while IFS=$'\t' read -r fam_id sample_id father_id mother_id sex phenotype; do
+        # Skip header lines if present
+        if [[ "$sample_id" =~ ^# ]] || [[ "$sample_id" == "SampleID" ]]; then
+            continue
+        fi
+        
+        # Check if this is the proband (affected child)
+        if [[ "$phenotype" == "2" ]]; then
+            PROBAND_ID="$sample_id"
+            PROBAND_SEX="$sex"
+            FATHER_ID="$father_id"
+            MOTHER_ID="$mother_id"
+            FAMILY_ID="$fam_id"
+            break
+        fi
+    done < "$PED_FILE"
+    
+    if [[ -n "$PROBAND_ID" ]]; then
+        echo -e "${GREEN}PED file parsed successfully:${NC}"
+        echo -e "  Family ID: $FAMILY_ID"
+        echo -e "  Proband ID: $PROBAND_ID"
+        echo -e "  Proband Sex: $([[ "$PROBAND_SEX" == "1" ]] && echo "Male" || echo "Female")"
+        echo -e "  Father ID: $FATHER_ID"
+        echo -e "  Mother ID: $MOTHER_ID"
+        
+        # Store for potential use in X chromosome analysis
+        CHILD_SEX="$PROBAND_SEX"
+    else
+        echo -e "${YELLOW}Warning: Could not identify proband in PED file (phenotype=2)${NC}"
+    fi
+else
+    echo -e "${YELLOW}No PED file provided - using manual file assignments${NC}"
+fi
+
+###############################################################################
 # Check File Existence
 ###############################################################################
 check_file() {
@@ -467,6 +514,11 @@ check_file "$CHILD_VCF"
 check_file "$FATHER_VCF"
 check_file "$MOTHER_VCF"
 check_file "$REFERENCE"
+
+# Check PED file if specified
+if [[ -n "$PED_FILE" ]]; then
+    check_file "$PED_FILE"
+fi
 
 # Check if BAM index files exist, if not create them
 for bam in "$CHILD_BAM" "$FATHER_BAM" "$MOTHER_BAM"; do
@@ -507,6 +559,12 @@ echo -e "${YELLOW}Copying VCF files to working directory (original files will no
 cp "$(realpath "$CHILD_VCF")" "$WORK_DIR/input/child.vcf"
 cp "$(realpath "$FATHER_VCF")" "$WORK_DIR/input/father.vcf"
 cp "$(realpath "$MOTHER_VCF")" "$WORK_DIR/input/mother.vcf"
+
+# PED file: COPY to working directory if provided
+if [[ -n "$PED_FILE" && -f "$PED_FILE" ]]; then
+    echo -e "${YELLOW}Copying PED file to working directory...${NC}"
+    cp "$(realpath "$PED_FILE")" "$WORK_DIR/input/family.ped"
+fi
 
 # Reference: use symlink (read-only operation)
 ln -sf "$(realpath "$REFERENCE")" "$WORK_DIR/input/reference.fa"

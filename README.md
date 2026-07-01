@@ -76,6 +76,17 @@ After installation completes, the DeNovoCNN repository will be cloned to your sp
 
 **Note:** VCF files are copied to the working directory to avoid modifying the original files. BAM files and reference genome are linked via symlinks (read-only operations).
 
+**PED File (Optional but Recommended):**
+You can optionally provide a PED file to auto-detect family structure and child's sex. The PED file format is:
+```
+FamilyID SampleID FatherID MotherID Sex(1=male,2=female) Phenotype(1=unaffected,2=affected)
+```
+
+If a PED file is provided, the analysis will:
+- Auto-detect the proband (affected child)
+- Determine the child's sex for potential X chromosome analysis
+- Display family information during analysis
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.
