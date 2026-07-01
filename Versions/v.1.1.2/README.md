@@ -49,7 +49,7 @@ ls Versions/
 - Creates a conda environment using the environment.yml file with all required dependencies (Python, TensorFlow, SAMtools, Pysam)
 - Installs Miniconda locally if system conda is not found
 
-**Folder Structure (v1.1.1+):**
+**Folder Structure (v1.1.2+):**
 The installer now uses a tools/ subdirectory structure:
 ```
 /path/to/installation/          # BASE_FOLDER (your --install-dir)
@@ -57,9 +57,10 @@ The installer now uses a tools/ subdirectory structure:
 │   ├── miniconda3/            # MINICONDA_DIR (local conda if not found)
 │   ├── env/                   # CONDA_PREFIX (conda environment)
 │   └── DeNovoCNN/             # DENOVOCNN_DIR (DeNovoCNN repository)
-│       ├── 0_README_DeNovoCNN_Workflow.md
-│       ├── 1_Define_data_specs.txt
-│       └── 2_Run_analysis.sh
+│       └── environment.yml
+├── 0_README_DeNovoCNN_Workflow.md
+├── 1_Define_data_specs.txt
+└── 2_Run_analysis.sh
 ```
 
 **Required Parameters:**

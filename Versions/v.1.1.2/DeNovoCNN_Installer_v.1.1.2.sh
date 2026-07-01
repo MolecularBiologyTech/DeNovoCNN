@@ -268,7 +268,7 @@ fi
 
 # Generate workflow documentation (0. Workflow)
 echo -e "${BLUE}Generating workflow documentation (0_README_DeNovoCNN_Workflow.md)...${NC}"
-cat > "$DENOVOCNN_DIR/0_README_DeNovoCNN_Workflow.md" << 'EOF'
+cat > "$BASE_FOLDER/0_README_DeNovoCNN_Workflow.md" << 'EOF'
 # DeNovoCNN Analysis Workflow - Complete Documentation
 
 ## Overview
@@ -392,7 +392,7 @@ EOF
 
 # Generate configuration file (1. Define specs)
 echo -e "${BLUE}Generating configuration file (1_Define_data_specs.txt)...${NC}"
-cat > "$DENOVOCNN_DIR/1_Define_data_specs.txt" << EOF
+cat > "$BASE_FOLDER/1_Define_data_specs.txt" << EOF
 #!/bin/bash
 # USER CONFIGURATION FILE
 # Edit all variables below before running script 2
@@ -450,7 +450,7 @@ EOF
 
 # Generate pipeline script (2. Run analysis)
 echo -e "${BLUE}Generating analysis script (2_Run_analysis.sh)...${NC}"
-cat > "$DENOVOCNN_DIR/2_Run_analysis.sh" << 'PIPELINE_EOF'
+cat > "$BASE_FOLDER/2_Run_analysis.sh" << 'PIPELINE_EOF'
 #!/bin/bash
 
 ###############################################################################
@@ -1008,8 +1008,8 @@ echo -e "${GREEN}Pipeline execution complete!${NC}"
 PIPELINE_EOF
 
 # Make files executable
-chmod +x "$DENOVOCNN_DIR/2_Run_analysis.sh"
-echo -e "${GREEN}Analysis script generated successfully at: $DENOVOCNN_DIR/2_Run_analysis.sh${NC}"
+chmod +x "$BASE_FOLDER/2_Run_analysis.sh"
+echo -e "${GREEN}Analysis script generated successfully at: $BASE_FOLDER/2_Run_analysis.sh${NC}"
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Installation Complete!${NC}"
@@ -1038,6 +1038,6 @@ if [[ -n "$CONDA_PREFIX" ]]; then
 else
     echo -e "   conda activate $CONDA_ENV_NAME"
 fi
-echo -e "3. Run analysis: cd $DENOVOCNN_DIR && ./2_Run_analysis.sh"
+echo -e "3. Run analysis: cd $BASE_FOLDER && ./2_Run_analysis.sh"
 echo ""
 echo -e "${GREEN}Ready to use!${NC}"
