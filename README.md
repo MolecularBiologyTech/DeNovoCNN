@@ -11,10 +11,16 @@ DeNovoCNN uses a versioned installation system. The latest installer script is a
 ls Versions/
 
 # Use the latest version installer
-./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /path/to/installation
+./Versions/v.1.1.0/DeNovoCNN_Installer_v.1.1.0.sh --use-conda --install-dir /path/to/installation
 ```
 
 **Version History:**
+- v.1.1.0: Added local Miniconda installation (conda installed in installation directory if not found)
+- v.1.0.9: Added IGV snapshot generation integration (IGV 2.16.2 auto-installation, snapshot parameters, automatic region detection)
+- v.1.0.8: Added support for separate SNV and SV VCFs with combined output
+- v.1.0.7: Added advanced DeNovoCNN parameters (REGION, OUTPUT_DENOVOCNN_FORMAT, NOT_CONVERT_TO_INNER_FORMAT)
+- v.1.0.6: Added PED file support for auto-detection of family structure and child's sex
+- v.1.0.5: Updated VCF file handling (copied to working directory to avoid modifying originals)
 - v.1.0.4: Restructured to follow 0.Workflow/1.Definespcs/2.Run pattern (0_README, 1_Define_data_specs.txt, 2_Run_analysis.sh)
 - v.1.0.3: Updated installer with improved workflow structure
 - v.1.0.2: Included run_denovocnn_pipeline.sh script in installer (copied to installation directory after setup)
@@ -24,16 +30,16 @@ ls Versions/
 ### 1. Installation (Required)
 
 **Prerequisite:**
-- Conda must be installed on your system (Miniconda or Anaconda)
+- Conda must be installed on your system (Miniconda or Anaconda), OR it will be installed locally
 
 **You must specify an installation directory.** The installation script requires explicit parameters to ensure proper setup.
 
 ```bash
-# Install with conda
-./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /path/to/installation
+# Install with conda (or local Miniconda if not found)
+./Versions/v.1.1.0/DeNovoCNN_Installer_v.1.1.0.sh --use-conda --install-dir /path/to/installation
 
 # Example:
-./Versions/v.1.0.4/DeNovoCNN_Installer_v.1.0.4.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
+./Versions/v.1.1.0/DeNovoCNN_Installer_v.1.1.0.sh --use-conda --install-dir /Users/matteozoia/tools/DeNovoCNN
 ```
 
 **What the installer does:**
