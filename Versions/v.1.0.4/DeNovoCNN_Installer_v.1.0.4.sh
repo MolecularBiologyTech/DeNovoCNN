@@ -344,9 +344,18 @@ FATHER_BAM="/path/to/father.bam"
 MOTHER_BAM="/path/to/mother.bam"
 
 # Input VCF files (absolute paths)
+# Option 1: Single VCF per sample (contains both SNV and SV)
 CHILD_VCF="/path/to/child.vcf"
 FATHER_VCF="/path/to/father.vcf"
 MOTHER_VCF="/path/to/mother.vcf"
+
+# Option 2: Separate SNV and SV VCFs (uncomment to use)
+#CHILD_SNV_VCF="/path/to/child_snv.vcf"
+#FATHER_SNV_VCF="/path/to/father_snv.vcf"
+#MOTHER_SNV_VCF="/path/to/mother_snv.vcf"
+#CHILD_SV_VCF="/path/to/child_sv.vcf"
+#FATHER_SV_VCF="/path/to/father_sv.vcf"
+#MOTHER_SV_VCF="/path/to/mother_sv.vcf"
 
 # Reference genome (absolute path)
 REFERENCE="/path/to/reference.fa"
@@ -463,6 +472,15 @@ if [[ -z "$CHILD_VCF" || -z "$FATHER_VCF" || -z "$MOTHER_VCF" ]]; then
     exit 1
 fi
 
+# Check if separate SNV/SV VCFs are provided
+USE_SEPARATE_VCF=false
+if [[ -n "$CHILD_SNV_VCF" && -n "$CHILD_SV_VCF" ]]; then
+    USE_SEPARATE_VCF=true
+    echo -e "${GREEN}Using separate SNV and SV VCF files${NC}"
+else
+    echo -e "${GREEN}Using single VCF files (assumed to contain both SNV and SV)${NC}"
+fi
+
 if [[ -z "$REFERENCE" ]]; then
     echo -e "${RED}Error: Reference genome file is required in 1_Define_data_specs.txt${NC}"
     exit 1
@@ -524,9 +542,20 @@ echo -e "${BLUE}Checking input files...${NC}"
 check_file "$CHILD_BAM"
 check_file "$FATHER_BAM"
 check_file "$MOTHER_BAM"
-check_file "$CHILD_VCF"
-check_file "$FATHER_VCF"
-check_file "$MOTHER_VCF"
+
+if [[ "$USE_SEPARATE_VCF" = true ]]; then
+    check_file "$CHILD_SNV_VCF"
+    check_file "$FATHER_SNV_VCF"
+    check_file "$MOTHER_SNV_VCF"
+    check_file "$CHILD_SV_VCF"
+    check_file "$FATHER_SV_VCF"
+    check_file "$MOTHER_SV_VCF"
+else
+    check_file "$CHILD_VCF"
+    check_file "$FATHER_VCF"
+    check_file "$MOTHER_VCF"
+fi
+
 check_file "$REFERENCE"
 
 # Check PED file if specified
@@ -570,9 +599,19 @@ ln -sf "$(realpath "$MOTHER_BAM")" "$WORK_DIR/input/mother.bam"
 
 # VCF files: COPY to working directory to avoid modifying original files
 echo -e "${YELLOW}Copying VCF files to working directory (original files will not be modified)...${NC}"
-cp "$(realpath "$CHILD_VCF")" "$WORK_DIR/input/child.vcf"
-cp "$(realpath "$FATHER_VCF")" "$WORK_DIR/input/father.vcf"
-cp "$(realpath "$MOTHER_VCF")" "$WORK_DIR/input/mother.vcf"
+if [[ "$USE_SEPARATE_VCF" = true ]]; then
+    echo -e "${YELLOW}Copying separate SNV and SV VCF files...${NC}"
+    cp "$(realpath "$CHILD_SNV_VCF")" "$WORK_DIR/input/child_snv.vcf"
+    cp "$(realpath "$FATHER_SNV_VCF")" "$WORK_DIR/input/father_snv.vcf"
+    cp "$(realpath "$MOTHER_SNV_VCF")" "$WORK_DIR/input/mother_snv.vcf"
+    cp "$(realpath "$CHILD_SV_VCF")" "$WORK_DIR/input/child_sv.vcf"
+    cp "$(realpath "$FATHER_SV_VCF")" "$WORK_DIR/input/father_sv.vcf"
+    cp "$(realpath "$MOTHER_SV_VCF")" "$WORK_DIR/input/mother_sv.vcf"
+else
+    cp "$(realpath "$CHILD_VCF")" "$WORK_DIR/input/child.vcf"
+    cp "$(realpath "$FATHER_VCF")" "$WORK_DIR/input/father.vcf"
+    cp "$(realpath "$MOTHER_VCF")" "$WORK_DIR/input/mother.vcf"
+fi
 
 # PED file: COPY to working directory if provided
 if [[ -n "$PED_FILE" && -f "$PED_FILE" ]]; then
@@ -629,55 +668,124 @@ build_optional_params() {
 OPTIONAL_PARAMS=$(build_optional_params)
 
 ###############################################################################
-# Split VCF for WGS Data (if needed)
+# Function to run DeNovoCNN on a set of VCFs
 ###############################################################################
-echo -e "${BLUE}Checking if VCF splitting is needed for WGS data...${NC}"
-VCF_SIZE=$(stat -f%z "$CHILD_VCF" 2>/dev/null || stat -c%s "$CHILD_VCF" 2>/dev/null)
-SPLIT_VCF=false
-
-if [[ $VCF_SIZE -gt 100000000 ]]; then  # If VCF > 100MB, split it
-    echo -e "${YELLOW}Large VCF detected ($VCF_SIZE bytes). Splitting for parallel processing...${NC}"
-    SPLIT_VCF=true
+run_denovocnn_on_vcf() {
+    local vcf_type=$1
+    local child_vcf=$2
+    local father_vcf=$3
+    local mother_vcf=$4
+    local output_prefix=$5
     
-    # Generate list of all variant positions
-    bcftools isec -C "$WORK_DIR/input/child.vcf" "$WORK_DIR/input/father.vcf" "$WORK_DIR/input/mother.vcf" > \
-        "$WORK_DIR/intermediate/all_variants.txt" 2>/dev/null || true
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}Running DeNovoCNN on ${vcf_type} VCFs${NC}"
+    echo -e "${BLUE}========================================${NC}"
     
-    # Split into chunks of 10,000 variants
-    split -d -l 10000 --additional-suffix=.txt "$WORK_DIR/intermediate/all_variants.txt" \
-        "$WORK_DIR/intermediate/part_variants"
+    # Check if VCF splitting is needed
+    VCF_SIZE=$(stat -f%z "$child_vcf" 2>/dev/null || stat -c%s "$child_vcf" 2>/dev/null)
+    SPLIT_VCF=false
     
-    NUM_PARTS=$(ls "$WORK_DIR/intermediate/part_variants"*.txt 2>/dev/null | wc -l)
-    echo -e "${GREEN}Split into $NUM_PARTS parts for parallel processing${NC}"
-fi
-
-###############################################################################
-# Run DeNovoCNN
-###############################################################################
-echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}Running DeNovoCNN Analysis${NC}"
-echo -e "${BLUE}========================================${NC}"
-
-if [[ "$SPLIT_VCF" = true ]]; then
-    # Run in parallel for each part
-    echo -e "${BLUE}Processing $NUM_PARTS parts in parallel...${NC}"
-    
-    > "$OUTPUT_DIR/predictions_combined.csv"
-    echo "chromosome,start,reference,variant,probability,prediction" > "$OUTPUT_DIR/predictions_combined.csv"
-    
-    for part in "$WORK_DIR/intermediate/part_variants"*.txt; do
-        part_num=$(basename "$part" .txt | sed 's/part_variants//')
-        echo -e "${YELLOW}Processing part $part_num...${NC}"
+    if [[ $VCF_SIZE -gt 100000000 ]]; then  # If VCF > 100MB, split it
+        echo -e "${YELLOW}Large ${vcf_type} VCF detected ($VCF_SIZE bytes). Splitting for parallel processing...${NC}"
+        SPLIT_VCF=true
         
+        # Generate list of all variant positions
+        bcftools isec -C "$child_vcf" "$father_vcf" "$mother_vcf" > \
+            "$WORK_DIR/intermediate/${vcf_type}_all_variants.txt" 2>/dev/null || true
+        
+        # Split into chunks of 10,000 variants
+        split -d -l 10000 --additional-suffix=.txt "$WORK_DIR/intermediate/${vcf_type}_all_variants.txt" \
+            "$WORK_DIR/intermediate/${vcf_type}_part_variants"
+        
+        NUM_PARTS=$(ls "$WORK_DIR/intermediate/${vcf_type}_part_variants"*.txt 2>/dev/null | wc -l)
+        echo -e "${GREEN}Split into $NUM_PARTS parts for parallel processing${NC}"
+    fi
+    
+    if [[ "$SPLIT_VCF" = true ]]; then
+        # Run in parallel for each part
+        echo -e "${BLUE}Processing $NUM_PARTS ${vcf_type} parts in parallel...${NC}"
+        
+        > "$OUTPUT_DIR/${output_prefix}_combined.csv"
+        echo "chromosome,start,reference,variant,probability,prediction,variant_type" > "$OUTPUT_DIR/${output_prefix}_combined.csv"
+        
+        for part in "$WORK_DIR/intermediate/${vcf_type}_part_variants"*.txt; do
+            part_num=$(basename "$part" .txt | sed "s/${vcf_type}_part_variants//")
+            echo -e "${YELLOW}Processing ${vcf_type} part $part_num...${NC}"
+            
+            if [[ "$USE_CONDA" = true ]]; then
+                if [[ -n "$CONDA_PREFIX" ]]; then
+                    conda run -p "$CONDA_PREFIX" \
+                        bash "$INSTALL_DIR/apply_denovocnn.sh" \
+                        -w="$OUTPUT_DIR" \
+                        -cv="$child_vcf" \
+                        -fv="$father_vcf" \
+                        -mv="$mother_vcf" \
+                        -cb="$WORK_DIR/input/child.bam" \
+                        -fb="$WORK_DIR/input/father.bam" \
+                        -mb="$WORK_DIR/input/mother.bam" \
+                        -sm="$SNP_MODEL" \
+                        -im="$INS_MODEL" \
+                        -dm="$DEL_MODEL" \
+                        -g="$WORK_DIR/input/reference.fa" \
+                        -v="$part" \
+                        $OPTIONAL_PARAMS \
+                        -o="$OUTPUT_DIR/${output_prefix}_part${part_num}.csv" || true
+                else
+                    conda run -n "$CONDA_ENV_NAME" \
+                        bash "$INSTALL_DIR/apply_denovocnn.sh" \
+                        -w="$OUTPUT_DIR" \
+                        -cv="$child_vcf" \
+                        -fv="$father_vcf" \
+                        -mv="$mother_vcf" \
+                        -cb="$WORK_DIR/input/child.bam" \
+                        -fb="$WORK_DIR/input/father.bam" \
+                        -mb="$WORK_DIR/input/mother.bam" \
+                        -sm="$SNP_MODEL" \
+                        -im="$INS_MODEL" \
+                        -dm="$DEL_MODEL" \
+                        -g="$WORK_DIR/input/reference.fa" \
+                        -v="$part" \
+                        $OPTIONAL_PARAMS \
+                        -o="$OUTPUT_DIR/${output_prefix}_part${part_num}.csv" || true
+                fi
+            else
+                docker run \
+                    -v "$WORK_DIR/input:/input" \
+                    -v "$OUTPUT_DIR:/output" \
+                    "$DOCKER_IMAGE" \
+                    /app/apply_denovocnn.sh \
+                    --workdir=/output \
+                    --child-vcf="$child_vcf" \
+                    --father-vcf="$father_vcf" \
+                    --mother-vcf="$mother_vcf" \
+                    --child-bam=/input/child.bam \
+                    --father-bam=/input/father.bam \
+                    --mother-bam=/input/mother.bam \
+                    --snp-model=/app/models/snp \
+                    --in-model=/app/models/ins \
+                    --del-model=/app/models/del \
+                    --genome=/input/reference.fa \
+                    --v="$part" \
+                    $OPTIONAL_PARAMS \
+                    --output="/output/${output_prefix}_part${part_num}.csv" || true
+            fi
+            
+            # Combine results
+            if [[ -f "$OUTPUT_DIR/${output_prefix}_part${part_num}.csv" ]]; then
+                tail -n +2 "$OUTPUT_DIR/${output_prefix}_part${part_num}.csv" | \
+                    awk -v type="$vcf_type" '{print $0 "," type}' >> "$OUTPUT_DIR/${output_prefix}_combined.csv"
+            fi
+        done
+    else
+        # Run on single VCF
         if [[ "$USE_CONDA" = true ]]; then
-            # Run with conda
             if [[ -n "$CONDA_PREFIX" ]]; then
                 conda run -p "$CONDA_PREFIX" \
                     bash "$INSTALL_DIR/apply_denovocnn.sh" \
                     -w="$OUTPUT_DIR" \
-                    -cv="$WORK_DIR/input/child.vcf" \
-                    -fv="$WORK_DIR/input/father.vcf" \
-                    -mv="$WORK_DIR/input/mother.vcf" \
+                    -cv="$child_vcf" \
+                    -fv="$father_vcf" \
+                    -mv="$mother_vcf" \
                     -cb="$WORK_DIR/input/child.bam" \
                     -fb="$WORK_DIR/input/father.bam" \
                     -mb="$WORK_DIR/input/mother.bam" \
@@ -685,16 +793,15 @@ if [[ "$SPLIT_VCF" = true ]]; then
                     -im="$INS_MODEL" \
                     -dm="$DEL_MODEL" \
                     -g="$WORK_DIR/input/reference.fa" \
-                    -v="$part" \
                     $OPTIONAL_PARAMS \
-                    -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
+                    -o="$OUTPUT_DIR/${output_prefix}.csv"
             else
                 conda run -n "$CONDA_ENV_NAME" \
                     bash "$INSTALL_DIR/apply_denovocnn.sh" \
                     -w="$OUTPUT_DIR" \
-                    -cv="$WORK_DIR/input/child.vcf" \
-                    -fv="$WORK_DIR/input/father.vcf" \
-                    -mv="$WORK_DIR/input/mother.vcf" \
+                    -cv="$child_vcf" \
+                    -fv="$father_vcf" \
+                    -mv="$mother_vcf" \
                     -cb="$WORK_DIR/input/child.bam" \
                     -fb="$WORK_DIR/input/father.bam" \
                     -mb="$WORK_DIR/input/mother.bam" \
@@ -702,21 +809,19 @@ if [[ "$SPLIT_VCF" = true ]]; then
                     -im="$INS_MODEL" \
                     -dm="$DEL_MODEL" \
                     -g="$WORK_DIR/input/reference.fa" \
-                    -v="$part" \
                     $OPTIONAL_PARAMS \
-                    -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
+                    -o="$OUTPUT_DIR/${output_prefix}.csv"
             fi
         else
-            # Run with Docker
             docker run \
                 -v "$WORK_DIR/input:/input" \
                 -v "$OUTPUT_DIR:/output" \
                 "$DOCKER_IMAGE" \
                 /app/apply_denovocnn.sh \
                 --workdir=/output \
-                --child-vcf=/input/child.vcf \
-                --father-vcf=/input/father.vcf \
-                --mother-vcf=/input/mother.vcf \
+                --child-vcf="$child_vcf" \
+                --father-vcf="$father_vcf" \
+                --mother-vcf="$mother_vcf" \
                 --child-bam=/input/child.bam \
                 --father-bam=/input/father.bam \
                 --mother-bam=/input/mother.bam \
@@ -724,81 +829,44 @@ if [[ "$SPLIT_VCF" = true ]]; then
                 --in-model=/app/models/ins \
                 --del-model=/app/models/del \
                 --genome=/input/reference.fa \
-                --v="$part" \
                 $OPTIONAL_PARAMS \
-                --output="/output/predictions_part${part_num}.csv" || true
+                --output="/output/${output_prefix}.csv"
         fi
         
-        # Combine results
-        if [[ -f "$OUTPUT_DIR/predictions_part${part_num}.csv" ]]; then
-            tail -n +2 "$OUTPUT_DIR/predictions_part${part_num}.csv" >> "$OUTPUT_DIR/predictions_combined.csv"
+        # Add variant type column
+        if [[ -f "$OUTPUT_DIR/${output_prefix}.csv" ]]; then
+            awk -v type="$vcf_type" 'NR==1 {print $0 ",variant_type"} NR>1 {print $0 "," type}' "$OUTPUT_DIR/${output_prefix}.csv" > "$OUTPUT_DIR/${output_prefix}_temp.csv"
+            mv "$OUTPUT_DIR/${output_prefix}_temp.csv" "$OUTPUT_DIR/${output_prefix}.csv"
         fi
-    done
+    fi
+}
+
+###############################################################################
+# Run DeNovoCNN on VCFs
+###############################################################################
+if [[ "$USE_SEPARATE_VCF" = true ]]; then
+    # Run on SNV VCFs
+    run_denovocnn_on_vcf "SNV" "$WORK_DIR/input/child_snv.vcf" "$WORK_DIR/input/father_snv.vcf" "$WORK_DIR/input/mother_snv.vcf" "predictions_snv"
     
-    # Remove header duplicates and sort
+    # Run on SV VCFs
+    run_denovocnn_on_vcf "SV" "$WORK_DIR/input/child_sv.vcf" "$WORK_DIR/input/father_sv.vcf" "$WORK_DIR/input/mother_sv.vcf" "predictions_sv"
+    
+    # Combine SNV and SV results
+    echo -e "${BLUE}Combining SNV and SV results...${NC}"
+    head -n 1 "$OUTPUT_DIR/predictions_snv_combined.csv" > "$OUTPUT_DIR/predictions_combined.csv
+    tail -n +2 "$OUTPUT_DIR/predictions_snv_combined.csv" >> "$OUTPUT_DIR/predictions_combined.csv"
+    tail -n +2 "$OUTPUT_DIR/predictions_sv_combined.csv" >> "$OUTPUT_DIR/predictions_combined.csv"
+    
+    # Sort and remove duplicates
     tail -n +2 "$OUTPUT_DIR/predictions_combined.csv" | sort -u > "$OUTPUT_DIR/predictions_temp.csv"
-    echo "chromosome,start,reference,variant,probability,prediction" > "$OUTPUT_DIR/predictions_combined.csv"
+    echo "chromosome,start,reference,variant,probability,prediction,variant_type" > "$OUTPUT_DIR/predictions_combined.csv"
     cat "$OUTPUT_DIR/predictions_temp.csv" >> "$OUTPUT_DIR/predictions_combined.csv"
     rm "$OUTPUT_DIR/predictions_temp.csv"
     
+    echo -e "${GREEN}Combined results saved to: $OUTPUT_DIR/predictions_combined.csv${NC}"
 else
-    # Run on single VCF
-    if [[ "$USE_CONDA" = true ]]; then
-        # Run with conda
-        if [[ -n "$CONDA_PREFIX" ]]; then
-            conda run -p "$CONDA_PREFIX" \
-                bash "$INSTALL_DIR/apply_denovocnn.sh" \
-                -w="$OUTPUT_DIR" \
-                -cv="$WORK_DIR/input/child.vcf" \
-                -fv="$WORK_DIR/input/father.vcf" \
-                -mv="$WORK_DIR/input/mother.vcf" \
-                -cb="$WORK_DIR/input/child.bam" \
-                -fb="$WORK_DIR/input/father.bam" \
-                -mb="$WORK_DIR/input/mother.bam" \
-                -sm="$SNP_MODEL" \
-                -im="$INS_MODEL" \
-                -dm="$DEL_MODEL" \
-                -g="$WORK_DIR/input/reference.fa" \
-                $OPTIONAL_PARAMS \
-                -o="$OUTPUT_DIR/predictions.csv"
-        else
-            conda run -n "$CONDA_ENV_NAME" \
-                bash "$INSTALL_DIR/apply_denovocnn.sh" \
-                -w="$OUTPUT_DIR" \
-                -cv="$WORK_DIR/input/child.vcf" \
-                -fv="$WORK_DIR/input/father.vcf" \
-                -mv="$WORK_DIR/input/mother.vcf" \
-                -cb="$WORK_DIR/input/child.bam" \
-                -fb="$WORK_DIR/input/father.bam" \
-                -mb="$WORK_DIR/input/mother.bam" \
-                -sm="$SNP_MODEL" \
-                -im="$INS_MODEL" \
-                -dm="$DEL_MODEL" \
-                -g="$WORK_DIR/input/reference.fa" \
-                $OPTIONAL_PARAMS \
-                -o="$OUTPUT_DIR/predictions.csv"
-        fi
-    else
-        # Run with Docker
-        docker run \
-            -v "$WORK_DIR/input:/input" \
-            -v "$OUTPUT_DIR:/output" \
-            "$DOCKER_IMAGE" \
-            /app/apply_denovocnn.sh \
-            --workdir=/output \
-            --child-vcf=/input/child.vcf \
-            --father-vcf=/input/father.vcf \
-            --mother-vcf=/input/mother.vcf \
-            --child-bam=/input/child.bam \
-            --father-bam=/input/father.bam \
-            --mother-bam=/input/mother.bam \
-            --snp-model=/app/models/snp \
-            --in-model=/app/models/ins \
-            --del-model=/app/models/del \
-            --genome=/input/reference.fa \
-            $OPTIONAL_PARAMS \
-            --output=/output/predictions.csv
-    fi
+    # Run on single VCF (original behavior)
+    run_denovocnn_on_vcf "MIXED" "$WORK_DIR/input/child.vcf" "$WORK_DIR/input/father.vcf" "$WORK_DIR/input/mother.vcf" "predictions"
 fi
 
 ###############################################################################
@@ -818,7 +886,12 @@ fi
 
 # Filter high-confidence de novo predictions (probability > 0.8)
 echo -e "${BLUE}Filtering high-confidence de novo predictions...${NC}"
-awk -F',' 'NR==1 || $5 > 0.8 {print}' "$PREDICTIONS_FILE" > "$OUTPUT_DIR/high_confidence_denovos.csv"
+# Check if variant_type column exists (for SNV/SV combined results)
+if head -n 1 "$PREDICTIONS_FILE" | grep -q "variant_type"; then
+    awk -F',' 'NR==1 || $5 > 0.8 {print}' "$PREDICTIONS_FILE" > "$OUTPUT_DIR/high_confidence_denovos.csv"
+else
+    awk -F',' 'NR==1 || $5 > 0.8 {print}' "$PREDICTIONS_FILE" > "$OUTPUT_DIR/high_confidence_denovos.csv"
+fi
 
 NUM_HIGH_CONF=$(tail -n +2 "$OUTPUT_DIR/high_confidence_denovos.csv" | wc -l)
 echo -e "${GREEN}Found $NUM_HIGH_CONF high-confidence de novo variants${NC}"

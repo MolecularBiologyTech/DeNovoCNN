@@ -95,6 +95,26 @@ In `1_Define_data_specs.txt`, you can also configure advanced DeNovoCNN paramete
 
 These parameters can be commented out with `#` if you don't want to use them.
 
+**SNV and SV VCF Support:**
+DeNovoCNN supports two modes for VCF input:
+1. **Single VCF per sample** (default): Each sample has one VCF containing both SNV and SV variants
+2. **Separate SNV and SV VCFs**: Each sample has separate VCFs for SNV and SV variants
+
+To use separate SNV and SV VCFs, uncomment the following in `1_Define_data_specs.txt`:
+```bash
+CHILD_SNV_VCF="/path/to/child_snv.vcf"
+FATHER_SNV_VCF="/path/to/father_snv.vcf"
+MOTHER_SNV_VCF="/path/to/mother_snv.vcf"
+CHILD_SV_VCF="/path/to/child_sv.vcf"
+FATHER_SV_VCF="/path/to/father_sv.vcf"
+MOTHER_SV_VCF="/path/to/mother_sv.vcf"
+```
+
+When using separate SNV and SV VCFs:
+- DeNovoCNN runs on both SNV and SV VCFs
+- Results are combined into a single output file with a `variant_type` column (SNV/SV)
+- Final output file: `predictions_combined.csv`
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.
