@@ -4,6 +4,7 @@ set -e
 # Configuration
 REPO_DIR="/Users/matteozoia/Documents/Lavoro/GitHub/DeNovoCNN"
 VERSIONS_DIR="$REPO_DIR/Versions"
+PROJECT_NAME="DeNovoCNN"
 
 # Get current version (find latest version)
 CURRENT_VERSION=$(ls -1 "$VERSIONS_DIR" | sort -V | tail -n 1)
@@ -15,14 +16,14 @@ fi
 
 echo "Current version: $CURRENT_VERSION"
 
-# Parse version numbers (format: v.1.0.0)
-MAJOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+# Parse version numbers (format: DeNovoCNN_v.1.0.0)
+MAJOR=$(echo $CURRENT_VERSION | cut -d. -f2 | cut -d_ -f2)
 MINOR=$(echo $CURRENT_VERSION | cut -d. -f3)
 PATCH=$(echo $CURRENT_VERSION | cut -d. -f4)
 
 # Increment patch version
 NEW_PATCH=$((PATCH + 1))
-NEW_VERSION="v.${MAJOR}.${MINOR}.${NEW_PATCH}"
+NEW_VERSION="${PROJECT_NAME}_v.${MAJOR}.${MINOR}.${NEW_PATCH}"
 
 echo "New version: $NEW_VERSION"
 
