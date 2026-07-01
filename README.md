@@ -87,6 +87,14 @@ If a PED file is provided, the analysis will:
 - Determine the child's sex for potential X chromosome analysis
 - Display family information during analysis
 
+**Advanced DeNovoCNN Parameters (Optional):**
+In `1_Define_data_specs.txt`, you can also configure advanced DeNovoCNN parameters:
+- `REGION` - Chromosome to analyze (1, 2, ... 22, X) - leave empty to analyze all regions
+- `OUTPUT_DENOVOCNN_FORMAT` - Set to "true" for normalized variants with end coordinate, "false" for standard
+- `NOT_CONVERT_TO_INNER_FORMAT` - Uncomment if you don't want to convert insertion positions to internal representation
+
+These parameters can be commented out with `#` if you don't want to use them.
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.

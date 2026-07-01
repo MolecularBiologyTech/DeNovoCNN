@@ -371,6 +371,20 @@ PHENOTYPE_FILE=""
 PROBABILITY_THRESHOLD="0.8"
 
 # ============================================================
+# 4. Advanced DeNovoCNN parameters (optional)
+# ============================================================
+# Comment out parameters you don't want to use with #
+
+# Region to analyze (1, 2, ... 22, X) - leave empty to analyze all regions
+#REGION=""
+
+# Output format: true = normalized variants with end coordinate, false = standard
+#OUTPUT_DENOVOCNN_FORMAT="false"
+
+# Don't convert insertion positions to internal representation (uncomment if needed)
+#NOT_CONVERT_TO_INNER_FORMAT=""
+
+# ============================================================
 # 4. Conda environment settings (automatically set)
 # ============================================================
 USE_CONDA=true
@@ -592,6 +606,29 @@ else
 fi
 
 ###############################################################################
+# Build optional parameters for apply_denovocnn.sh
+###############################################################################
+build_optional_params() {
+    local params=""
+    
+    if [[ -n "$REGION" ]]; then
+        params="$params -r=$REGION"
+    fi
+    
+    if [[ -n "$OUTPUT_DENOVOCNN_FORMAT" ]]; then
+        params="$params -df=$OUTPUT_DENOVOCNN_FORMAT"
+    fi
+    
+    if [[ -n "$NOT_CONVERT_TO_INNER_FORMAT" ]]; then
+        params="$params -nci"
+    fi
+    
+    echo "$params"
+}
+
+OPTIONAL_PARAMS=$(build_optional_params)
+
+###############################################################################
 # Split VCF for WGS Data (if needed)
 ###############################################################################
 echo -e "${BLUE}Checking if VCF splitting is needed for WGS data...${NC}"
@@ -649,6 +686,7 @@ if [[ "$SPLIT_VCF" = true ]]; then
                     -dm="$DEL_MODEL" \
                     -g="$WORK_DIR/input/reference.fa" \
                     -v="$part" \
+                    $OPTIONAL_PARAMS \
                     -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
             else
                 conda run -n "$CONDA_ENV_NAME" \
@@ -665,6 +703,7 @@ if [[ "$SPLIT_VCF" = true ]]; then
                     -dm="$DEL_MODEL" \
                     -g="$WORK_DIR/input/reference.fa" \
                     -v="$part" \
+                    $OPTIONAL_PARAMS \
                     -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
             fi
         else
@@ -686,6 +725,7 @@ if [[ "$SPLIT_VCF" = true ]]; then
                 --del-model=/app/models/del \
                 --genome=/input/reference.fa \
                 --v="$part" \
+                $OPTIONAL_PARAMS \
                 --output="/output/predictions_part${part_num}.csv" || true
         fi
         
@@ -719,6 +759,7 @@ else
                 -im="$INS_MODEL" \
                 -dm="$DEL_MODEL" \
                 -g="$WORK_DIR/input/reference.fa" \
+                $OPTIONAL_PARAMS \
                 -o="$OUTPUT_DIR/predictions.csv"
         else
             conda run -n "$CONDA_ENV_NAME" \
@@ -734,6 +775,7 @@ else
                 -im="$INS_MODEL" \
                 -dm="$DEL_MODEL" \
                 -g="$WORK_DIR/input/reference.fa" \
+                $OPTIONAL_PARAMS \
                 -o="$OUTPUT_DIR/predictions.csv"
         fi
     else
@@ -754,6 +796,7 @@ else
             --in-model=/app/models/ins \
             --del-model=/app/models/del \
             --genome=/input/reference.fa \
+            $OPTIONAL_PARAMS \
             --output=/output/predictions.csv
     fi
 fi
