@@ -21,9 +21,9 @@ MAJOR=$(echo $CURRENT_VERSION | cut -d. -f2 | cut -d_ -f2)
 MINOR=$(echo $CURRENT_VERSION | cut -d. -f3)
 PATCH=$(echo $CURRENT_VERSION | cut -d. -f4)
 
-# Increment patch version
-NEW_PATCH=$((PATCH + 1))
-NEW_VERSION="${PROJECT_NAME}_v.${MAJOR}.${MINOR}.${NEW_PATCH}"
+# Increment minor version for significant changes
+NEW_MINOR=$((MINOR + 1))
+NEW_VERSION="${PROJECT_NAME}_v.${MAJOR}.${NEW_MINOR}.0"
 
 echo "New version: $NEW_VERSION"
 
