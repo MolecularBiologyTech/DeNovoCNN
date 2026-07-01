@@ -4,14 +4,31 @@
 
 ### Version Management
 
-DeNovoCNN uses a versioned installation system. The latest installer script is always available in the `Versions/` directory.
+DeNovoCNN uses a versioned installation system. You can download and install specific versions using the download script.
+
+#### Download Specific Version
+
+```bash
+# Download a specific version (interactive selection)
+./download_version.sh
+
+# This will:
+# 1. Show available versions from GitHub
+# 2. Let you select which version to download
+# 3. Download only the selected version (not all versions)
+# 4. Create a directory with the installer and README
+```
+
+#### Alternative: Clone Full Repository
+
+If you prefer to clone the full repository with all versions:
 
 ```bash
 # List available versions
 ls Versions/
 
 # Use the latest version installer
-./Versions/v.1.1.3/DeNovoCNN_Installer_v.1.1.3.sh --use-conda --install-dir /path/to/installation
+./Versions/DeNovoCNN_v.1.1.3/DeNovoCNN_Installer_DeNovoCNN_v.1.1.3.sh --use-conda --install-dir /path/to/installation
 ```
 
 **Version History:**
@@ -22,10 +39,10 @@ ls Versions/
 - v.1.0.9: Added IGV snapshot generation integration (IGV 2.16.2 auto-installation, snapshot parameters, automatic region detection)
 - v.1.0.8: Added support for separate SNV and SV VCFs with combined output
 - v.1.0.7: Added advanced DeNovoCNN parameters (REGION, OUTPUT_DENOVOCNN_FORMAT, NOT_CONVERT_TO_INNER_FORMAT)
-- v.1.0.6: Added PED file support for auto-detection of family structure and child's sex
+- D file support for _DeNovoCNNauto-detection of family structure and child's sex
 - v.1.0.5: Updated VCF file handling (copied to working directory to avoid modifying originals)
 - v.1.0.4: Restructured to follow 0.Workflow/1.Definespcs/2.Run pattern (0_README, 1_Define_data_specs.txt, 2_Run_analysis.sh)
-- v.1.0.3: Updated installer with improved workflow structure
+- installer with impr_DeNovoCNNoved workflow structure
 - v.1.0.2: Included run_denovocnn_pipeline.sh script in installer (copied to installation directory after setup)
 - v.1.0.1: Added Ubuntu Linux support (OS detection, Ubuntu-specific paths, OS-specific conda installation instructions)
 - v.1.0.0: Initial version
