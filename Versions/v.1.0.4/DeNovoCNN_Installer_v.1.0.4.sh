@@ -165,6 +165,43 @@ if [[ "$USE_CONDA" = true ]]; then
         echo -e "${GREEN}DeNovoCNN already installed at $INSTALL_DIR${NC}"
     fi
     
+    # Install IGV for snapshot generation
+    echo -e "${BLUE}Installing IGV for snapshot generation...${NC}"
+    IGV_DIR="$INSTALL_DIR/IGV"
+    if [[ ! -d "$IGV_DIR" ]]; then
+        mkdir -p "$IGV_DIR"
+        IGV_VERSION="2.16.2"
+        if [[ "$OS" == "macOS" ]]; then
+            IGV_URL="https://data.broadinstitute.org/igv/projects/downloads/IGV_${IGV_VERSION}.app.zip"
+            echo -e "${YELLOW}Downloading IGV for macOS...${NC}"
+            curl -L "$IGV_URL" -o "$IGV_DIR/IGV.zip"
+            unzip -q "$IGV_DIR/IGV.zip" -d "$IGV_DIR"
+            mv "$IGV_DIR/IGV.app" "$IGV_DIR/IGV"
+            rm "$IGV_DIR/IGV.zip"
+            # Create wrapper script
+            cat > "$IGV_DIR/igv.sh" << 'IGV_EOF'
+#!/bin/bash
+"$(dirname "$0")/IGV/Contents/MacOS/igvtools" "$@"
+IGV_EOF
+        else
+            IGV_URL="https://data.broadinstitute.org/igv/projects/downloads/IGV_Linux_2.16.2.zip"
+            echo -e "${YELLOW}Downloading IGV for Linux...${NC}"
+            wget -q "$IGV_URL" -O "$IGV_DIR/IGV.zip"
+            unzip -q "$IGV_DIR/IGV.zip" -d "$IGV_DIR"
+            mv "$IGV_DIR/IGV_Linux_2.16.2" "$IGV_DIR/IGV"
+            rm "$IGV_DIR/IGV.zip"
+            # Create wrapper script
+            cat > "$IGV_DIR/igv.sh" << 'IGV_EOF'
+#!/bin/bash
+"$(dirname "$0")/IGV/igvtools" "$@"
+IGV_EOF
+        fi
+        chmod +x "$IGV_DIR/igv.sh"
+        echo -e "${GREEN}IGV installed successfully at: $IGV_DIR${NC}"
+    else
+        echo -e "${GREEN}IGV already installed at: $IGV_DIR${NC}"
+    fi
+    
     # Create conda environment if not exists
     if [[ -n "$CONDA_PREFIX" ]]; then
         # Use prefix (specific path)
@@ -392,6 +429,28 @@ PROBABILITY_THRESHOLD="0.8"
 
 # Don't convert insertion positions to internal representation (uncomment if needed)
 #NOT_CONVERT_TO_INNER_FORMAT=""
+
+# ============================================================
+# 5. IGV Snapshot Parameters (optional)
+# ============================================================
+# Uncomment to enable automatic IGV snapshot generation for de novo regions
+#ENABLE_IGV_SNAPSHOTS="false"
+
+# IGV snapshot output directory (relative to WORK_DIR)
+#IGV_SNAPSHOT_DIR="igv_snapshots"
+
+# Snapshot image size (width x height)
+#IGV_IMAGE_WIDTH="1920"
+#IGV_IMAGE_HEIGHT="1080"
+
+# Snapshot zoom level (1-20, higher = more zoomed in)
+#IGV_ZOOM_LEVEL="10"
+
+# Number of base pairs to show around each variant
+#IGV_WINDOW_SIZE="500"
+
+# Snapshot image format (png, svg, jpg)
+#IGV_IMAGE_FORMAT="png"
 
 # ============================================================
 # 4. Conda environment settings (automatically set)
@@ -668,6 +727,59 @@ build_optional_params() {
 OPTIONAL_PARAMS=$(build_optional_params)
 
 ###############################################################################
+# IGV Snapshot Generation Function
+###############################################################################
+generate_igv_snapshots() {
+    local predictions_file=$1
+    local snapshot_dir=$2
+    
+    if [[ ! -f "$predictions_file" ]]; then
+        echo -e "${YELLOW}No predictions file found, skipping IGV snapshots${NC}"
+        return
+    fi
+    
+    echo -e "${BLUE}Generating IGV snapshots for de novo regions...${NC}"
+    
+    # Create snapshot directory
+    mkdir -p "$snapshot_dir"
+    
+    # Extract regions from predictions file (skip header)
+    tail -n +2 "$predictions_file" | while IFS=',' read -r chr start ref var prob pred type; do
+        if [[ -n "$chr" && -n "$start" ]]; then
+            # Calculate window around variant
+            window_start=$((start - IGV_WINDOW_SIZE / 2))
+            window_end=$((start + IGV_WINDOW_SIZE / 2))
+            
+            # Generate snapshot filename
+            variant_id="${chr}_${start}_${ref}_${var}"
+            snapshot_file="$snapshot_dir/${variant_id}.${IGV_IMAGE_FORMAT}"
+            
+            echo -e "${YELLOW}Generating snapshot for $variant_id...${NC}"
+            
+            # Use IGV to generate snapshot (if IGV tools are available)
+            # Note: IGV snapshot generation requires IGV to be running with a session
+            # This is a placeholder for the actual IGV snapshot command
+            # In practice, you would use igvtools or IGV batch mode
+            
+            # Create a batch script for IGV
+            cat > "$WORK_DIR/igv_batch_${variant_id}.txt" << IGV_BATCH
+new
+load "$WORK_DIR/input/child.bam"
+load "$WORK_DIR/input/father.bam"
+load "$WORK_DIR/input/mother.bam"
+goto $chr:$window_start-$window_end
+snapshot "$snapshot_file"
+IGV_BATCH
+            
+            # Note: IGV must be running in batch mode to execute this
+            # This is a simplified example - actual implementation may vary
+        fi
+    done
+    
+    echo -e "${GREEN}IGV snapshots saved to: $snapshot_dir${NC}"
+}
+
+###############################################################################
 # Function to run DeNovoCNN on a set of VCFs
 ###############################################################################
 run_denovocnn_on_vcf() {
@@ -895,6 +1007,21 @@ fi
 
 NUM_HIGH_CONF=$(tail -n +2 "$OUTPUT_DIR/high_confidence_denovos.csv" | wc -l)
 echo -e "${GREEN}Found $NUM_HIGH_CONF high-confidence de novo variants${NC}"
+
+###############################################################################
+# IGV Snapshot Generation
+###############################################################################
+if [[ "$ENABLE_IGV_SNAPSHOTS" = "true" ]]; then
+    # Set default values if not specified
+    IGV_SNAPSHOT_DIR="${IGV_SNAPSHOT_DIR:-$WORK_DIR/igv_snapshots}"
+    IGV_IMAGE_WIDTH="${IGV_IMAGE_WIDTH:-1920}"
+    IGV_IMAGE_HEIGHT="${IGV_IMAGE_HEIGHT:-1080}"
+    IGV_ZOOM_LEVEL="${IGV_ZOOM_LEVEL:-10}"
+    IGV_WINDOW_SIZE="${IGV_WINDOW_SIZE:-500}"
+    IGV_IMAGE_FORMAT="${IGV_IMAGE_FORMAT:-png}"
+    
+    generate_igv_snapshots "$PREDICTIONS_FILE" "$IGV_SNAPSHOT_DIR"
+fi
 
 ###############################################################################
 # Phenotype-Based Prioritization

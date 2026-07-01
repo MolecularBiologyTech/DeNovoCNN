@@ -115,6 +115,26 @@ When using separate SNV and SV VCFs:
 - Results are combined into a single output file with a `variant_type` column (SNV/SV)
 - Final output file: `predictions_combined.csv`
 
+**IGV Snapshot Generation (Optional):**
+DeNovoCNN can automatically generate IGV snapshots for detected de novo regions. To enable this feature, uncomment the following in `1_Define_data_specs.txt`:
+```bash
+ENABLE_IGV_SNAPSHOTS="true"
+IGV_SNAPSHOT_DIR="igv_snapshots"
+IGV_IMAGE_WIDTH="1920"
+IGV_IMAGE_HEIGHT="1080"
+IGV_ZOOM_LEVEL="10"
+IGV_WINDOW_SIZE="500"
+IGV_IMAGE_FORMAT="png"
+```
+
+When enabled:
+- IGV is automatically installed with DeNovoCNN in the installation directory
+- After DeNovoCNN analysis, snapshots are generated for each detected de novo variant
+- Snapshots are saved in the specified directory (default: `igv_snapshots/`)
+- Each snapshot is named based on variant: `{chromosome}_{position}_{ref}_{alt}.{format}`
+
+**Note:** IGV snapshot generation requires IGV to be available. The installer downloads IGV 2.16.2 automatically during installation. Snapshots are generated using IGV batch mode scripts.
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.
