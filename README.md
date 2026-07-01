@@ -135,6 +135,34 @@ When enabled:
 
 **Note:** IGV snapshot generation requires IGV to be available. The installer downloads IGV 2.16.2 automatically during installation. Snapshots are generated using IGV batch mode scripts.
 
+**Local Miniconda Installation:**
+DeNovoCNN can automatically install Miniconda locally if conda is not found on your system. When you run the installer without system conda:
+- Miniconda3 is downloaded and installed in the DeNovoCNN installation directory
+- Conda environment is created within the local Miniconda installation
+- All dependencies are installed in the local environment
+- No system-wide conda installation is required
+
+**Folder Structure after Installation:**
+```
+/path/to/DeNovoCNN/
+├── miniconda3/              # Local Miniconda (if system conda not found)
+│   ├── bin/
+│   ├── envs/
+│   │   └── denovocnn_env/   # Conda environment with dependencies
+│   └── ...
+├── IGV/                     # IGV installation for snapshots
+│   ├── IGV/                 # IGV application
+│   └── igv.sh               # Wrapper script
+├── models/                  # Pre-trained CNN models
+│   ├── snp/
+│   ├── ins/
+│   └── del/
+├── apply_denovocnn.sh       # Core DeNovoCNN script
+├── 0_README_DeNovoCNN_Workflow.md
+├── 1_Define_data_specs.txt
+└── 2_Run_analysis.sh
+```
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.

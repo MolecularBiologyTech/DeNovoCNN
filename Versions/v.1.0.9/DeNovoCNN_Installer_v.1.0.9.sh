@@ -145,16 +145,43 @@ if [[ "$USE_CONDA" = true ]]; then
     echo -e "${BLUE}Setting up conda installation on $OS...${NC}"
     
     # Check conda installation
-    if ! command -v conda &> /dev/null; then
-        echo -e "${RED}Error: Conda is not installed. Please install conda first.${NC}"
-        if [[ "$OS" == "Linux" ]]; then
-            echo "Ubuntu Linux: wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-            echo "              bash Miniconda3-latest-Linux-x86_64.sh"
+    CONDA_CMD=""
+    if command -v conda &> /dev/null; then
+        CONDA_CMD="conda"
+        echo -e "${GREEN}System conda found${NC}"
+    else
+        # Install Miniconda locally
+        echo -e "${YELLOW}Conda not found, installing Miniconda locally...${NC}"
+        MINICONDA_DIR="$INSTALL_DIR/miniconda3"
+        if [[ ! -d "$MINICONDA_DIR" ]]; then
+            mkdir -p "$INSTALL_DIR"
+            if [[ "$OS" == "Linux" ]]; then
+                MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+                echo -e "${YELLOW}Downloading Miniconda for Linux...${NC}"
+                wget -q "$MINICONDA_URL" -O "$INSTALL_DIR/miniconda.sh"
+                bash "$INSTALL_DIR/miniconda.sh" -b -p "$MINICONDA_DIR"
+                rm "$INSTALL_DIR/miniconda.sh"
+            else
+                MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
+                echo -e "${YELLOW}Downloading Miniconda for macOS...${NC}"
+                curl -L "$MINICONDA_URL" -o "$INSTALL_DIR/miniconda.sh"
+                bash "$INSTALL_DIR/miniconda.sh" -b -p "$MINICONDA_DIR"
+                rm "$INSTALL_DIR/miniconda.sh"
+            fi
+            echo -e "${GREEN}Miniconda installed locally at: $MINICONDA_DIR${NC}"
         else
-            echo "macOS: brew install --cask miniconda"
+            echo -e "${GREEN}Miniconda already installed locally at: $MINICONDA_DIR${NC}"
         fi
-        echo "Or visit: https://docs.conda.io/en/latest/miniconda.html"
-        exit 1
+        CONDA_CMD="$MINICONDA_DIR/bin/conda"
+    fi
+    
+    # Initialize conda for bash
+    if [[ -n "$CONDA_PREFIX" ]]; then
+        source "$CONDA_PREFIX/etc/profile.d/conda.sh"
+    elif [[ -n "$MINICONDA_DIR" ]]; then
+        source "$MINICONDA_DIR/etc/profile.d/conda.sh"
+    else
+        conda init bash > /dev/null 2>&1 || true
     fi
     
     # Clone DeNovoCNN repository if not exists
@@ -171,22 +198,38 @@ if [[ "$USE_CONDA" = true ]]; then
         if [[ ! -d "$CONDA_PREFIX" ]]; then
             echo -e "${BLUE}Creating conda environment at: $CONDA_PREFIX...${NC}"
             cd "$INSTALL_DIR"
-            conda env create -f environment.yml -p "$CONDA_PREFIX"
+            $CONDA_CMD env create -f environment.yml -p "$CONDA_PREFIX"
             cd - > /dev/null
             echo -e "${GREEN}Conda environment created successfully at: $CONDA_PREFIX${NC}"
         else
             echo -e "${GREEN}Conda environment already exists at: $CONDA_PREFIX${NC}"
         fi
     else
-        # Use environment name
-        if ! conda env list | grep -q "^${CONDA_ENV_NAME} "; then
-            echo -e "${BLUE}Creating conda environment: $CONDA_ENV_NAME...${NC}"
-            cd "$INSTALL_DIR"
-            conda env create -f environment.yml --name "$CONDA_ENV_NAME"
-            cd - > /dev/null
-            echo -e "${GREEN}Conda environment $CONDA_ENV_NAME created successfully${NC}"
+        # Use environment name or default to local miniconda
+        if [[ -n "$MINICONDA_DIR" ]]; then
+            CONDA_PREFIX="$MINICONDA_DIR/envs/$CONDA_ENV_NAME"
+        fi
+        
+        if [[ -n "$CONDA_PREFIX" ]]; then
+            if [[ ! -d "$CONDA_PREFIX" ]]; then
+                echo -e "${BLUE}Creating conda environment at: $CONDA_PREFIX...${NC}"
+                cd "$INSTALL_DIR"
+                $CONDA_CMD env create -f environment.yml -p "$CONDA_PREFIX"
+                cd - > /dev/null
+                echo -e "${GREEN}Conda environment created successfully at: $CONDA_PREFIX${NC}"
+            else
+                echo -e "${GREEN}Conda environment already exists at: $CONDA_PREFIX${NC}"
+            fi
         else
-            echo -e "${GREEN}Conda environment $CONDA_ENV_NAME already exists${NC}"
+            if ! $CONDA_CMD env list | grep -q "^${CONDA_ENV_NAME} "; then
+                echo -e "${BLUE}Creating conda environment: $CONDA_ENV_NAME...${NC}"
+                cd "$INSTALL_DIR"
+                $CONDA_CMD env create -f environment.yml --name "$CONDA_ENV_NAME"
+                cd - > /dev/null
+                echo -e "${GREEN}Conda environment $CONDA_ENV_NAME created successfully${NC}"
+            else
+                echo -e "${GREEN}Conda environment $CONDA_ENV_NAME already exists${NC}"
+            fi
         fi
     fi
     
@@ -371,6 +414,7 @@ PROBABILITY_THRESHOLD="0.8"
 USE_CONDA=true
 CONDA_PREFIX="$CONDA_PREFIX"
 CONDA_ENV_NAME="$CONDA_ENV_NAME"
+MINICONDA_DIR="$MINICONDA_DIR"
 EOF
 
 # Generate pipeline script (2. Run analysis)
@@ -592,6 +636,22 @@ if [[ "$SPLIT_VCF" = true ]]; then
                     -g="$WORK_DIR/input/reference.fa" \
                     -v="$part" \
                     -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
+            elif [[ -n "$MINICONDA_DIR" ]]; then
+                "$MINICONDA_DIR/bin/conda" run -n "$CONDA_ENV_NAME" \
+                    bash "$INSTALL_DIR/apply_denovocnn.sh" \
+                    -w="$OUTPUT_DIR" \
+                    -cv="$WORK_DIR/input/child.vcf" \
+                    -fv="$WORK_DIR/input/father.vcf" \
+                    -mv="$WORK_DIR/input/mother.vcf" \
+                    -cb="$WORK_DIR/input/child.bam" \
+                    -fb="$WORK_DIR/input/father.bam" \
+                    -mb="$WORK_DIR/input/mother.bam" \
+                    -sm="$SNP_MODEL" \
+                    -im="$INS_MODEL" \
+                    -dm="$DEL_MODEL" \
+                    -g="$WORK_DIR/input/reference.fa" \
+                    -v="$part" \
+                    -o="$OUTPUT_DIR/predictions_part${part_num}.csv" || true
             else
                 conda run -n "$CONDA_ENV_NAME" \
                     bash "$INSTALL_DIR/apply_denovocnn.sh" \
@@ -649,6 +709,21 @@ else
         # Run with conda
         if [[ -n "$CONDA_PREFIX" ]]; then
             conda run -p "$CONDA_PREFIX" \
+                bash "$INSTALL_DIR/apply_denovocnn.sh" \
+                -w="$OUTPUT_DIR" \
+                -cv="$WORK_DIR/input/child.vcf" \
+                -fv="$WORK_DIR/input/father.vcf" \
+                -mv="$WORK_DIR/input/mother.vcf" \
+                -cb="$WORK_DIR/input/child.bam" \
+                -fb="$WORK_DIR/input/father.bam" \
+                -mb="$WORK_DIR/input/mother.bam" \
+                -sm="$SNP_MODEL" \
+                -im="$INS_MODEL" \
+                -dm="$DEL_MODEL" \
+                -g="$WORK_DIR/input/reference.fa" \
+                -o="$OUTPUT_DIR/predictions.csv"
+        elif [[ -n "$MINICONDA_DIR" ]]; then
+            "$MINICONDA_DIR/bin/conda" run -n "$CONDA_ENV_NAME" \
                 bash "$INSTALL_DIR/apply_denovocnn.sh" \
                 -w="$OUTPUT_DIR" \
                 -cv="$WORK_DIR/input/child.vcf" \
