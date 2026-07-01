@@ -74,6 +74,8 @@ After installation completes, the DeNovoCNN repository will be cloned to your sp
 2. Activate the conda environment
 3. Run `./2_Run_analysis.sh` to execute the analysis
 
+**Note:** VCF files are copied to the working directory to avoid modifying the original files. BAM files and reference genome are linked via symlinks (read-only operations).
+
 ## Overview
 
 DeNovoCNN is a deep learning approach that uses convolutional neural networks (CNNs) to identify de novo mutations (DNMs) in trio whole genome sequencing (WGS) and whole exome sequencing (WES) data. It achieves state-of-the-art performance by converting genomic sequencing data into image-like representations and applying computer vision techniques to distinguish true de novo mutations from sequencing artifacts.

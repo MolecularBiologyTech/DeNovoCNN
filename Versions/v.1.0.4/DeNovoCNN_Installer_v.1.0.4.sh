@@ -497,12 +497,18 @@ mkdir -p "$WORK_DIR/intermediate"
 # Copy/Symlink Input Files
 ###############################################################################
 echo -e "${BLUE}Preparing input files...${NC}"
+# BAM files: use symlinks (read-only operations)
 ln -sf "$(realpath "$CHILD_BAM")" "$WORK_DIR/input/child.bam"
 ln -sf "$(realpath "$FATHER_BAM")" "$WORK_DIR/input/father.bam"
 ln -sf "$(realpath "$MOTHER_BAM")" "$WORK_DIR/input/mother.bam"
-ln -sf "$(realpath "$CHILD_VCF")" "$WORK_DIR/input/child.vcf"
-ln -sf "$(realpath "$FATHER_VCF")" "$WORK_DIR/input/father.vcf"
-ln -sf "$(realpath "$MOTHER_VCF")" "$WORK_DIR/input/mother.vcf"
+
+# VCF files: COPY to working directory to avoid modifying original files
+echo -e "${YELLOW}Copying VCF files to working directory (original files will not be modified)...${NC}"
+cp "$(realpath "$CHILD_VCF")" "$WORK_DIR/input/child.vcf"
+cp "$(realpath "$FATHER_VCF")" "$WORK_DIR/input/father.vcf"
+cp "$(realpath "$MOTHER_VCF")" "$WORK_DIR/input/mother.vcf"
+
+# Reference: use symlink (read-only operation)
 ln -sf "$(realpath "$REFERENCE")" "$WORK_DIR/input/reference.fa"
 
 # Copy index files
